@@ -12,15 +12,18 @@ module Grape
 
           if jbuilderable?
             jbuilder do |template|
-              engine = ::Tilt.new(view_path(template), nil, view_path: env['api.tilt.root'])
-              json = engine.render(endpoint, {})
-
               if layout = env['api.tilt.layout']
-                endpoint.instance_variable_set :@data, JSON.parse(json) # TODO embed directory
+                if endpoint.instance_variable_get(:@error).blank?
+                  engine = ::Tilt.new(view_path(template), nil, view_path: env['api.tilt.root'])
+                  json   = engine.render(endpoint, {})
+                  endpoint.instance_variable_set :@data, JSON.parse(json) # TODO embed directory
+                end
                 engine = Tilt::JbuilderTemplate.new(File.open(layout))
-                json = engine.render(endpoint)
+                json = engine.render(endpoint, {})
+              else
+                engine = ::Tilt.new(view_path(template), nil, view_path: env['api.tilt.root'])
+                json = engine.render(endpoint, {})
               end
-
               json
             end
           else
